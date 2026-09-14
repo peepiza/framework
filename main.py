@@ -16,7 +16,7 @@ def check_room_available(is_available):
     return "Помещение занято"
 
 
-def check_band_free(are_free):
+deff check_band_free(are_free):
     if are_free:
         return "Все участники свободны"
     return "Не все участники свободны"
