@@ -1,0 +1,8 @@
+[
+  {"id": 1, "name": "Анна", "instrument": "вокал", "band_id": 1},
+  {"id": 2, "name": "Борис", "instrument": "гитара", "band_id": 1},
+  {"id": 3, "name": "Виктор", "instrument": "барабаны", "band_id": 1},
+  {"id": 4, "name": "Галина", "instrument": "бас-гитара", "band_id": 1},
+  {"id": 5, "name": "Дмитрий", "instrument": "клавиши", "band_id": 1},
+  {"id": 6, "name": "Елена", "instrument": "саксофон", "band_id": 2}
+]
