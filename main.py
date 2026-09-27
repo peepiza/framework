@@ -1,8 +1,9 @@
 """Точка запуска сервиса планирования репетиций."""
-from bands import add_band
-from members import get_members_by_band
-from rooms import add_room, find_room, sort_rooms
-from rehearsals import (
+from models import Band, Room, Rehearsal
+from models.bands import add_band, get_band_by_id
+from models.members import get_members_by_band
+from models.rooms import add_room, find_room, get_room_by_id, sort_rooms
+from models.rehearsals import (
     create_rehearsal,
     cancel_rehearsal,
     is_room_available,
@@ -22,61 +23,68 @@ ROOMS_FILE = "data/rooms.json"
 REHEARSALS_FILE = "data/rehearsals.json"
 
 
-def show_bands(bands: list[dict]) -> None:
+def show_bands(bands: list[Band]) -> None:
     """Вывести список групп."""
     if not bands:
         print("Список групп пуст.")
         return
     print("\n--- Группы ---")
     for band in bands:
-        print(
-            f"[{band['id']}] {band['name']} | "
-            f"жанр: {band['genre']} | "
-            f"участников: {band['members_count']}"
-        )
+        print(band)
 
 
-def show_rooms(rooms: list[dict]) -> None:
+def show_rooms(rooms: list[Room]) -> None:
     """Вывести список помещений."""
     if not rooms:
         print("Список помещений пуст.")
         return
     print("\n--- Помещения ---")
     for room in rooms:
-        print(
-            f"[{room['id']}] {room['name']} | "
-            f"вместимость: {room['capacity']} | "
-            f"адрес: {room['address']}"
-        )
+        print(room)
 
 
-def show_rehearsals(
-    rehearsals: list[dict],
-    bands: list[dict],
-    rooms: list[dict],
-) -> None:
-    """Вывести список репетиций с расшифровкой группы и помещения."""
+def show_rehearsals(rehearsals: list[Rehearsal]) -> None:
+    """Вывести список репетиций."""
     if not rehearsals:
         print("Список репетиций пуст.")
         return
     print("\n--- Репетиции ---")
     for rehearsal in rehearsals:
-        band = next(
-            (b for b in bands if b["id"] == rehearsal["band_id"]),
-            None,
-        )
-        room = next(
-            (r for r in rooms if r["id"] == rehearsal["room_id"]),
-            None,
-        )
-        band_name = band["name"] if band else "—"
-        room_name = room["name"] if room else "—"
-        print(
-            f"[{rehearsal['id']}] {band_name} | "
-            f"{room_name} | "
-            f"{rehearsal['rehearsal_date']} "
-            f"{rehearsal['start_time']}"
-        )
+        print(rehearsal)
+
+
+def create_new_rehearsal(
+    bands: list[Band],
+    rooms: list[Room],
+    rehearsals: list[Rehearsal],
+) -> None:
+    """Запросить данные и создать репетицию."""
+    show_bands(bands)
+    band_id = input_int("Введите id группы: ")
+    band = get_band_by_id(bands, band_id)
+    if band is None:
+        print("Группа не найдена.")
+        return
+
+    show_rooms(rooms)
+    room_id = input_int("Введите id помещения: ")
+    room = get_room_by_id(rooms, room_id)
+    if room is None:
+        print("Помещение не найдено.")
+        return
+
+    rehearsal_date = input_date("Дата (ДД.ММ.ГГГГ): ")
+    start_time = input_time("Время начала (ЧЧ:ММ): ")
+
+    rehearsal = create_rehearsal(
+        rehearsals,
+        band,
+        room,
+        rehearsal_date,
+        start_time.strftime("%H:%M"),
+    )
+    if rehearsal is not None:
+        print(f"Репетиция создана: {rehearsal}")
 
 
 def menu() -> None:
@@ -84,7 +92,7 @@ def menu() -> None:
     bands = load_bands(BANDS_FILE)
     members = load_members(MEMBERS_FILE)
     rooms = load_rooms(ROOMS_FILE)
-    rehearsals = load_rehearsals(REHEARSALS_FILE)
+    rehearsals = load_rehearsals(REHEARSALS_FILE, bands, rooms)
 
     while True:
         print("\n=== Сервис планирования репетиций ===")
@@ -112,9 +120,7 @@ def menu() -> None:
             if not group:
                 print("Участники не найдены.")
             for member in group:
-                print(
-                    f"{member['name']} — {member['instrument']}"
-                )
+                print(member)
         elif choice == 3:
             show_rooms(rooms)
         elif choice == 4:
@@ -135,37 +141,26 @@ def menu() -> None:
             query = input("Подстрока названия: ")
             room = find_room(rooms, query)
             if room:
-                print(
-                    f"[{room['id']}] {room['name']} | "
-                    f"вместимость: {room['capacity']}"
-                )
+                print(room)
             else:
                 print("Помещение не найдено.")
         elif choice == 7:
             show_rooms(rooms)
             room_id = input_int("Введите id помещения: ")
+            room = get_room_by_id(rooms, room_id)
+            if room is None:
+                print("Помещение не найдено.")
+                continue
             rehearsal_date = input_date("Дата (ДД.ММ.ГГГГ): ")
             available = is_room_available(
-                rehearsals, room_id, rehearsal_date
+                rehearsals, room, rehearsal_date
             )
             print(get_rehearsal_status(available))
         elif choice == 8:
-            show_bands(bands)
-            band_id = input_int("Введите id группы: ")
-            show_rooms(rooms)
-            room_id = input_int("Введите id помещения: ")
-            rehearsal_date = input_date("Дата (ДД.ММ.ГГГГ): ")
-            start_time = input_time("Время начала (ЧЧ:ММ): ")
-            rehearsal = create_rehearsal(
-                rehearsals, bands, rooms,
-                band_id, room_id,
-                rehearsal_date, start_time.strftime("%H:%M"),
-            )
-            if rehearsal:
-                save_rehearsals(REHEARSALS_FILE, rehearsals)
-                print("Репетиция создана.")
+            create_new_rehearsal(bands, rooms, rehearsals)
+            save_rehearsals(REHEARSALS_FILE, rehearsals)
         elif choice == 9:
-            show_rehearsals(rehearsals, bands, rooms)
+            show_rehearsals(rehearsals)
             rehearsal_id = input_int("Введите id репетиции: ")
             if cancel_rehearsal(rehearsals, rehearsal_id):
                 save_rehearsals(REHEARSALS_FILE, rehearsals)
@@ -173,13 +168,10 @@ def menu() -> None:
             else:
                 print("Репетиция не найдена.")
         elif choice == 10:
-            show_rehearsals(rehearsals, bands, rooms)
+            show_rehearsals(rehearsals)
         elif choice == 11:
             for room in sort_rooms(rooms):
-                print(
-                    f"[{room['id']}] {room['name']} | "
-                    f"вместимость: {room['capacity']}"
-                )
+                print(room)
         elif choice == 0:
             save_bands(BANDS_FILE, bands)
             save_members(MEMBERS_FILE, members)
