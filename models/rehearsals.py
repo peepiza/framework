@@ -153,3 +153,11 @@ def get_rehearsal_status(is_available: bool) -> str:
     if is_available:
         return "Помещение доступно для бронирования"
     return "Помещение уже занято"
+
+
+def find_rehearsal_by_id(rehearsals, rehearsal_id):
+    """Найти репетицию по ID."""
+    for rehearsal in rehearsals:
+        if rehearsal.id == rehearsal_id:
+            return rehearsal
+    return None
