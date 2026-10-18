@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Сервис репетиций{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-white rounded-3 shadow-sm">
+    <h1 class="display-5">Сервис планирования репетиций</h1>
+    <p class="lead">Приложение для музыкальных групп: управление помещениями и расписанием.</p>
+    <hr>
+    <a href="{% url 'rooms:rooms' %}" class="btn btn-primary btn-lg me-2">Помещения</a>
+    <a href="{% url 'rehearsals:rehearsals' %}" class="btn btn-secondary btn-lg">Репетиции</a>
+</div>
+{% endblock %}

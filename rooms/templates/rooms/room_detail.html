@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{% if room %}{{ room.name }}{% else %}Ошибка 404{% endif %} - Сервис репетиций{% endblock %}
+
+{% block content %}
+{% if room %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">{{ room.name }}</h2>
+            <p class="card-text"><strong>ID:</strong> {{ room.id }}</p>
+            <p class="card-text"><strong>Адрес:</strong> {{ room.address|default:"Не указан" }}</p>
+            <p class="card-text"><strong>Вместимость:</strong> {{ room.capacity }} чел.</p>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-danger mt-3">
+        <h2>Помещение не найдено</h2>
+        <p>Помещение с указанным ID отсутствует в системе.</p>
+    </div>
+{% endif %}
+<a href="{% url 'rooms:rooms' %}" class="btn btn-outline-secondary mt-3">← Назад к списку</a>
+{% endblock %}

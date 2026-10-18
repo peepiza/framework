@@ -9,5 +9,4 @@ urlpatterns = [
     path("rehearsals/", include("rehearsals.urls")),
 ]
 
-# Обработчик 404 ошибки
-handler404 = "homepage.views.page_not_found"
+

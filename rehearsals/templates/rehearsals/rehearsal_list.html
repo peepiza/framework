@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Репетиции - Сервис репетиций{% endblock %}
+
+{% block content %}
+<h1>Репетиции</h1>
+<ul class="list-group mt-3">
+    {% for r in rehearsals %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ r.band.name }}</strong> — {{ r.room.name }}<br>
+                <small class="text-muted">{{ r.rehearsal_date }} в {{ r.start_time }}</small>
+            </div>
+            <div>
+                {% with rehearsal=r %}
+                    {% include "rehearsals/includes/rehearsal_status.html" %}
+                {% endwith %}
+                <a href="{% url 'rehearsals:rehearsal_detail' r.id %}" class="btn btn-sm btn-outline-primary ms-2">Детали</a>
+            </div>
+        </li>
+    {% empty %}
+        <li class="list-group-item">Репетиции не найдены.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

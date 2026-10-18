@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Помещения - Сервис репетиций{% endblock %}
+
+{% block content %}
+<h1>Помещения</h1>
+<p class="text-muted">Всего помещений: {{ rooms|length }}</p>
+<div class="row mt-3">
+    {% for room in rooms %}
+        <div class="col-md-6">
+            {% include "rooms/includes/room_card.html" %}
+        </div>
+    {% empty %}
+        <p>Помещения не найдены.</p>
+    {% endfor %}
+</div>
+{% endblock %}

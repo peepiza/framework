@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Репетиция №{{ rehearsal.id }} - Сервис репетиций{% endblock %}
+
+{% block content %}
+{% if rehearsal %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Репетиция №{{ rehearsal.id }}</h2>
+            <p class="card-text"><strong>Группа:</strong> {{ rehearsal.band.name }}</p>
+            <p class="card-text"><strong>Помещение:</strong> {{ rehearsal.room.name }}</p>
+            <p class="card-text"><strong>Дата:</strong> {{ rehearsal.rehearsal_date }}</p>
+            <p class="card-text"><strong>Время:</strong> {{ rehearsal.start_time }}</p>
+            <p class="card-text">
+                <strong>Статус:</strong> 
+                {% with rehearsal=rehearsal %}
+                    {% include "rehearsals/includes/rehearsal_status.html" %}
+                {% endwith %}
+            </p>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-danger mt-3">
+        <h2>Репетиция не найдена</h2>
+        <p>Запись с указанным ID отсутствует.</p>
+    </div>
+{% endif %}
+<a href="{% url 'rehearsals:rehearsals' %}" class="btn btn-outline-secondary mt-3">← Назад к списку</a>
+{% endblock %}
