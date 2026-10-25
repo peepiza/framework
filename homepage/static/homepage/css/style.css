@@ -1,10 +1,107 @@
-.card {
-    transition: transform 0.2s;
+:root {
+    --autumn-bg: #fdf6e3;          /* Светло-кремовый фон */
+    --autumn-dark: #4a2c1b;        /* Глубокий коричневый (текст) */
+    --autumn-primary: #d35400;     /* Тыквенный (основной цвет) */
+    --autumn-secondary: #e67e22;   /* Золотистый */
+    --autumn-accent: #c0392b;      /* Багряный (для ошибок/удаления) */
+    --autumn-card-bg: #ffffff;
+    --autumn-border: #e8d5b7;
 }
+
+body {
+    background-color: var(--autumn-bg);
+    color: var(--autumn-dark);
+    font-family: 'Georgia', serif; /* Классический шрифт для уюта */
+    min-height: 100vh;
+}
+
+/* Навигация */
+.nav {
+    background-color: var(--autumn-dark) !important;
+    border-bottom: 4px solid var(--autumn-primary);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link {
+    color: #fdf6e3 !important;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+    color: var(--autumn-secondary) !important;
+}
+
+/* Заголовки */
+h1, h2, h3, h4, h5 {
+    color: var(--autumn-dark);
+    font-weight: 700;
+}
+
+.display-5, .display-4 {
+    color: var(--autumn-primary);
+}
+
+/* Кнопки */
+.btn-primary {
+    background-color: var(--autumn-primary);
+    border-color: var(--autumn-primary);
+    color: white;
+    font-weight: 600;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--autumn-dark);
+    border-color: var(--autumn-dark);
+}
+
+.btn-outline-primary {
+    color: var(--autumn-primary);
+    border-color: var(--autumn-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--autumn-primary);
+    color: white;
+}
+
+.btn-secondary {
+    background-color: var(--autumn-secondary);
+    border-color: var(--autumn-secondary);
+    color: white;
+}
+
+/* Карточки */
+.card, .list-group-item {
+    background-color: var(--autumn-card-bg);
+    border: 1px solid var(--autumn-border);
+    border-radius: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
 .card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(74, 44, 27, 0.15);
 }
-.badge {
-    font-size: 0.9em;
+
+.card-title {
+    color: var(--autumn-primary);
+}
+
+/* Бейджи статусов */
+.badge.bg-success {
+    background-color: #d4a373 !important; /* Осенний желтый */
+    color: var(--autumn-dark) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--autumn-accent) !important;
+    color: white !important;
+}
+
+/* Подвал */
+footer {
+    color: #8c7365;
+    border-top: 1px dashed var(--autumn-border);
+    padding-top: 15px;
 }

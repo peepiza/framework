@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Поиск свободных помещений{% endblock %}
+
+{% block content %}
+<h1>Поиск свободных помещений</h1>
+<form method="get" class="mb-4">
+    <label for="date" class="form-label">Выберите дату:</label>
+    <div class="input-group">
+        <input type="date" id="date" name="date" class="form-control" value="{{ booking_date }}">
+        <button type="submit" class="btn btn-primary">Найти</button>
+    </div>
+</form>
+
+{% if booking_date %}
+    <h3>Результаты на {{ booking_date }}:</h3>
+    <ul class="list-group">
+        {% for room in rooms %}
+            <li class="list-group-item">{{ room.name }} (вместимость: {{ room.capacity }})</li>
+        {% empty %}
+            <li class="list-group-item text-danger">Свободных помещений нет.</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+{% endblock %}

@@ -7,7 +7,8 @@
     {% for r in rehearsals %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
             <div>
-                <strong>{{ r.band.name }}</strong> — {{ r.room.name }}<br>
+                <!-- Исправлено: теперь обращаемся к band_name и room_name, которые вернул SQL-запрос -->
+                <strong>{{ r.band_name }}</strong> — {{ r.room_name }}<br>
                 <small class="text-muted">{{ r.rehearsal_date }} в {{ r.start_time }}</small>
             </div>
             <div>

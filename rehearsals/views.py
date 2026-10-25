@@ -1,38 +1,64 @@
-"""Представления для репетиций."""
+import sqlite3
 from django.shortcuts import render
-from storage import load_rooms, load_bands, load_rehearsals
-from models.rehearsals import find_rehearsal_by_id
+
+DB_PATH = "data/rehearsal_planner.sqlite"
 
 
 def rehearsals(request):
-    """Список всех репетиций."""
-    rooms = load_rooms("data/rooms.json")
-    bands = load_bands("data/bands.json")
-    rehearsals_list = load_rehearsals("data/rehearsals.json", bands, rooms)
-
-    context = {
-        "rehearsals": rehearsals_list,
-    }
-    return render(request, "rehearsals/rehearsal_list.html", context)
+    """Список репетиций с названиями групп и помещений из БД."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    query = """
+        SELECT r.id, b.name AS band_name, ro.name AS room_name, 
+               r.rehearsal_date, r.start_time, r.is_cancelled 
+        FROM rehearsals r
+        JOIN bands b ON r.band_id = b.id
+        JOIN rooms ro ON r.room_id = ro.id
+        ORDER BY r.rehearsal_date DESC
+    """
+    rehearsals_data = conn.execute(query).fetchall()
+    conn.close()
+    
+    return render(request, "rehearsals/rehearsal_list.html", {"rehearsals": rehearsals_data})
 
 
 def rehearsal_detail(request, rehearsal_id: int):
-    """Детальная страница репетиции."""
-    rooms = load_rooms("data/rooms.json")
-    bands = load_bands("data/bands.json")
-    rehearsals_list = load_rehearsals("data/rehearsals.json", bands, rooms)
-
-    rehearsal = find_rehearsal_by_id(rehearsals_list, rehearsal_id)
-
-    context = {
-        "rehearsal": rehearsal,
-    }
-
-    # Если репетиции нет, возвращаем статус 404
-    status_code = 404 if rehearsal is None else 200
+    """Детальная страница репетиции из БД."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    query = """
+        SELECT r.id, b.name AS band_name, ro.name AS room_name, 
+               r.rehearsal_date, r.start_time, r.is_cancelled 
+        FROM rehearsals r
+        JOIN bands b ON r.band_id = b.id
+        JOIN rooms ro ON r.room_id = ro.id
+        WHERE r.id = ?
+    """
+    # Параметризованный запрос
+    rehearsal = conn.execute(query, [rehearsal_id]).fetchone()
+    conn.close()
+    
+    context = {"rehearsal": rehearsal}
     return render(
-        request,
-        "rehearsals/rehearsal_detail.html",
-        context,
-        status=status_code
+        request, 
+        "rehearsals/rehearsal_detail.html", 
+        context, 
+        status=404 if rehearsal is None else 200
     )
+
+
+def statistics(request):
+    """Статистика: сколько репетиций у каждой группы."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    query = """
+        SELECT bands.name AS band_name, COUNT(rehearsals.id) AS rehearsals_count 
+        FROM bands 
+        LEFT JOIN rehearsals ON bands.id = rehearsals.band_id AND rehearsals.is_cancelled = 0
+        GROUP BY bands.id, bands.name
+        ORDER BY rehearsals_count DESC
+    """
+    stats_data = conn.execute(query).fetchall()
+    conn.close()
+    
+    return render(request, "rehearsals/statistics.html", {"statistics": stats_data})
