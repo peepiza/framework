@@ -11,7 +11,9 @@
     </div>
 </form>
 
-{% if booking_date %}
+{% if date_error %}
+    <p class="text-danger">{{ date_error }}</p>
+{% elif booking_date %}
     <h3>Результаты на {{ booking_date }}:</h3>
     <ul class="list-group">
         {% for room in rooms %}

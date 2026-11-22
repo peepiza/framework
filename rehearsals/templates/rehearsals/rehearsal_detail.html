@@ -1,26 +1,32 @@
 {% extends "base.html" %}
-{% block title %}Репетиция №{{ rehearsal.id }} - Сервис репетиций{% endblock %}
+{% block title %}Репетиция №{{ rehearsal.id }} - {{ service_name }}{% endblock %}
 
 {% block content %}
 {% if rehearsal %}
     <div class="card shadow-sm">
         <div class="card-body">
             <h2 class="card-title">Репетиция №{{ rehearsal.id }}</h2>
-            <!-- Исправлено: band_name и room_name -->
-            <p class="card-text"><strong>Группа:</strong> {{ rehearsal.band_name }}</p>
-            <p class="card-text"><strong>Помещение:</strong> {{ rehearsal.room_name }}</p>
-            <p class="card-text"><strong>Дата:</strong> {{ rehearsal.rehearsal_date }}</p>
-            <p class="card-text"><strong>Время:</strong> {{ rehearsal.start_time }}</p>
+            <p class="card-text"><strong>Группа:</strong> {{ rehearsal.band.name }}</p>
+            <p class="card-text"><strong>Помещение:</strong> {{ rehearsal.room.name }}</p>
+            <p class="card-text"><strong>Дата:</strong> {{ rehearsal.rehearsal_date|date:"Y-m-d" }}</p>
+            <p class="card-text"><strong>Время:</strong> {{ rehearsal.start_time|time:"H:i" }}</p>
             <p class="card-text">
                 <strong>Статус:</strong> 
-                {% if rehearsal.is_cancelled %}
-                    <span class="badge bg-danger">Отменена</span>
-                {% else %}
-                    <span class="badge bg-success">Активна</span>
-                {% endif %}
+                {% include "rehearsals/includes/rehearsal_status.html" %}
             </p>
         </div>
     </div>
+    {% if perms.rehearsals.change_rehearsal %}
+        <div class="d-flex gap-2 mt-3">
+            <a class="btn btn-primary" href="{% url 'rehearsals:rehearsal_edit' rehearsal.pk %}">Редактировать</a>
+            {% if rehearsal.status == "active" %}
+                <form method="post" action="{% url 'rehearsals:rehearsal_cancel' rehearsal.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-outline-danger">Отменить репетицию</button>
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
 {% else %}
     <div class="alert alert-danger mt-3">
         <h2>Репетиция не найдена</h2>
