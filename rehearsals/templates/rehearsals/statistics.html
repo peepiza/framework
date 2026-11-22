@@ -3,12 +3,12 @@
 
 {% block content %}
 <h1>Статистика репетиций по группам</h1>
-<p>Активных репетиций: {{ totals.total }}</p>
+<p>Активных: {{ totals.total }} · Отменённых: {{ totals.cancelled }} · Завершённых: {{ totals.completed }}</p>
 <table class="table table-striped mt-3">
     <thead>
         <tr>
             <th>Группа</th>
-            <th>Количество репетиций</th>
+            <th>Активные репетиции</th>
         </tr>
     </thead>
     <tbody>

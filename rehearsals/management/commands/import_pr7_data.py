@@ -33,7 +33,8 @@ def rehearsal_values(row):
         raise ValueError("Ожидается время без часового пояса.")
     if type(raw_cancelled) is not int or raw_cancelled not in (0, 1):
         raise ValueError("Ожидается признак отмены 0 или 1.")
-    return pk, band_id, room_id, rehearsal_date, start_time, bool(raw_cancelled)
+    status = Rehearsal.Status.CANCELLED if raw_cancelled else Rehearsal.Status.ACTIVE
+    return pk, band_id, room_id, rehearsal_date, start_time, status
 
 
 class Command(BaseCommand):
@@ -67,7 +68,8 @@ class Command(BaseCommand):
                         for model, table, fields in TABLES
                     }
                     for model, table, fields in TABLES:
-                        actual = list(model.objects.order_by("pk").values_list(*fields))
+                        target_fields = (*fields[:-1], "status") if model is Rehearsal else fields
+                        actual = list(model.objects.order_by("pk").values_list(*target_fields))
                         if actual != expected[table]:
                             raise CommandError(
                                 f"{table}: данные после переноса отличаются от источника."
@@ -89,7 +91,8 @@ class Command(BaseCommand):
         for row in legacy.execute(f"SELECT {columns} FROM {table} ORDER BY id"):
             try:
                 values = rehearsal_values(row) if model is Rehearsal else row
-                record = model(**dict(zip(fields, values, strict=True)))
+                target_fields = (*fields[:-1], "status") if model is Rehearsal else fields
+                record = model(**dict(zip(target_fields, values, strict=True)))
                 record.full_clean(validate_unique=False)
             except (TypeError, ValueError, ValidationError) as error:
                 raise CommandError(
@@ -98,5 +101,9 @@ class Command(BaseCommand):
             expected.append(values)
             records.append(record)
 
-        model.objects.bulk_create(records)
+        if model is Room:
+            for record in records:
+                record.save(force_insert=True)
+        else:
+            model.objects.bulk_create(records)
         return expected

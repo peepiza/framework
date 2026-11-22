@@ -46,14 +46,14 @@ class ImportPR7DataTests(TestCase):
             [(20, "Группа", "рок", 4)],
         )
         rehearsals = Rehearsal.objects.order_by("pk").values_list(
-            "id", "band_id", "room_id", "rehearsal_date", "start_time", "is_cancelled",
+            "id", "band_id", "room_id", "rehearsal_date", "start_time", "status",
         )
         self.assertEqual(
             list(rehearsals),
             [
-                (30, 20, 10, date(2026, 9, 15), time(19, 0), False),
-                (40, 20, 10, date(2026, 9, 15), time(19, 0), False),
-                (50, 20, 10, date(2026, 9, 15), time(19, 0), True),
+                (30, 20, 10, date(2026, 9, 15), time(19, 0), Rehearsal.Status.ACTIVE),
+                (40, 20, 10, date(2026, 9, 15), time(19, 0), Rehearsal.Status.ACTIVE),
+                (50, 20, 10, date(2026, 9, 15), time(19, 0), Rehearsal.Status.CANCELLED),
             ],
         )
 
@@ -96,7 +96,8 @@ class RehearsalPagesTests(TestCase):
         for day in range(1, 7):
             Rehearsal.objects.create(
                 room=cls.room, band=cls.band, rehearsal_date=date(2026, 9, day),
-                start_time=time(19), is_cancelled=day == 6,
+                start_time=time(19),
+                status=Rehearsal.Status.CANCELLED if day == 6 else Rehearsal.Status.ACTIVE,
             )
 
     def test_filters_and_pagination(self):
@@ -123,3 +124,46 @@ class RehearsalPagesTests(TestCase):
         self.assertContains(self.client.get(f"/rehearsals/{pk}/"), "Ансамбль")
         for url in ("/rooms/999/", "/rehearsals/999/"):
             self.assertEqual(self.client.get(url).status_code, 404)
+
+
+class AdminAndStatusTests(TestCase):
+    def test_room_computed_size_and_both_addresses(self):
+        room = Room.objects.create(name="Зал", capacity=49)
+        other = Room.objects.create(name="Зал", capacity=50)
+        self.assertNotEqual(room.slug, other.slug)
+        self.assertFalse(room.is_large)
+        room.capacity = 50
+        room.save(update_fields=["capacity"])
+        room.refresh_from_db()
+        self.assertTrue(room.is_large)
+        self.assertContains(self.client.get(room.get_absolute_url()), "Зал")
+        self.assertContains(self.client.get(f"/rooms/{room.pk}/"), "Зал")
+        self.assertEqual(self.client.get("/rooms/missing-slug/").status_code, 404)
+
+    def test_admin_read_only_staff_permissions(self):
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.models import Permission
+
+        staff = get_user_model().objects.create_user("reader", is_staff=True)
+        staff.user_permissions.add(
+            Permission.objects.get(content_type__app_label="rooms", codename="view_room"),
+        )
+        self.client.force_login(staff)
+        self.assertEqual(self.client.get("/admin/rooms/room/").status_code, 200)
+        self.assertEqual(self.client.get("/admin/rooms/room/add/").status_code, 403)
+        self.assertEqual(self.client.get("/admin/rehearsals/rehearsal/").status_code, 403)
+
+    def test_completed_rehearsal_does_not_block_room(self):
+        room = Room.objects.create(name="Зал", capacity=30)
+        band = Band.objects.create(name="Группа", genre="Рок", members_count=4)
+        selected_date = date(2026, 9, 15)
+        Rehearsal.objects.create(
+            room=room, band=band, rehearsal_date=selected_date,
+            start_time=time(19), status=Rehearsal.Status.COMPLETED,
+        )
+        self.assertEqual(Rehearsal.objects.completed().for_date(selected_date).count(), 1)
+        self.assertFalse(Rehearsal.objects.active().exists())
+        response = self.client.get("/rooms/available/", {"date": selected_date})
+        self.assertContains(response, "Зал")
+        response = self.client.get("/rehearsals/statistics/")
+        self.assertEqual(response.context["totals"]["completed"], 1)

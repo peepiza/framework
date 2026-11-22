@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Репетиция №{{ rehearsal.id }} - Сервис репетиций{% endblock %}
+{% block title %}Репетиция №{{ rehearsal.id }} - {{ service_name }}{% endblock %}
 
 {% block content %}
 {% if rehearsal %}
@@ -12,11 +12,7 @@
             <p class="card-text"><strong>Время:</strong> {{ rehearsal.start_time|time:"H:i" }}</p>
             <p class="card-text">
                 <strong>Статус:</strong> 
-                {% if rehearsal.is_cancelled %}
-                    <span class="badge bg-danger">Отменена</span>
-                {% else %}
-                    <span class="badge bg-success">Активна</span>
-                {% endif %}
+                {% include "rehearsals/includes/rehearsal_status.html" %}
             </p>
         </div>
     </div>

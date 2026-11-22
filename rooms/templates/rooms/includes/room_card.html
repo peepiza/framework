@@ -2,6 +2,6 @@
     <div class="card-body">
         <h5 class="card-title">{{ room.name|default:"Без названия" }}</h5>
         <p class="card-text">Вместимость: {{ room.capacity }} чел.</p>
-        <a href="{% url 'rooms:room_detail' room.id %}" class="btn btn-sm btn-outline-primary">Подробнее</a>
+        <a href="{{ room.get_absolute_url }}" class="btn btn-sm btn-outline-primary">Подробнее</a>
     </div>
 </article>

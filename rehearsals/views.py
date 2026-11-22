@@ -19,11 +19,14 @@ SORT_LABELS = {"recent": "Сначала новые", "oldest": "Сначала 
 def rehearsal_queryset(filters):
     queryset = Rehearsal.objects.all()
     if filters.get("date"):
-        queryset = queryset.filter(rehearsal_date=filters["date"])
+        queryset = queryset.for_date(filters["date"])
     if filters.get("room"):
         queryset = queryset.filter(room_id=filters["room"])
     if filters.get("band"):
         queryset = queryset.filter(band_id=filters["band"])
+    status = filters.get("status")
+    if status:
+        queryset = queryset.filter(status=status)
     if filters.get("q"):
         queryset = queryset.filter(
             Q(band__name__icontains=filters["q"]) | Q(room__name__icontains=filters["q"]),
@@ -32,7 +35,7 @@ def rehearsal_queryset(filters):
 
 
 def rehearsals(request):
-    raw = {key: request.GET.get(key, "") for key in ("date", "room", "band", "q", "sort")}
+    raw = {key: request.GET.get(key, "") for key in ("date", "room", "band", "q", "sort", "status")}
     filters = {**raw, "q": raw["q"].strip()}
     errors = []
     if raw["date"]:
@@ -51,6 +54,8 @@ def rehearsals(request):
                 errors.append("Некорректное помещение или группа.")
     if raw["sort"] and raw["sort"] not in SORTS:
         errors.append("Неизвестный порядок сортировки.")
+    if raw["status"] and raw["status"] not in Rehearsal.Status.values:
+        errors.append("Неизвестный статус.")
     queryset = Rehearsal.objects.none() if errors else rehearsal_queryset(filters)
     items = queryset.annotate(band_name=F("band__name"), room_name=F("room__name"))
     page = Paginator(items, 5).get_page(request.GET.get("page"))
@@ -59,7 +64,7 @@ def rehearsals(request):
     return render(request, "rehearsals/rehearsal_list.html", {
         "rehearsals": page, "page": page, "params": params.urlencode(), "filters": raw,
         "filter_errors": errors, "rooms": Room.objects.all(), "bands": Band.objects.all(),
-        "sort_options": SORT_LABELS.items(),
+        "sort_options": SORT_LABELS.items(), "statuses": Rehearsal.Status.choices,
     })
 
 
@@ -72,7 +77,11 @@ def rehearsal_detail(request, rehearsal_id):
 def statistics(request):
     stats = Band.objects.annotate(
         band_name=F("name"),
-        rehearsals_count=Count("rehearsals", filter=Q(rehearsals__is_cancelled=False)),
+        rehearsals_count=Count("rehearsals", filter=Q(rehearsals__status=Rehearsal.Status.ACTIVE)),
     ).order_by("-rehearsals_count", "name", "pk")
-    totals = Rehearsal.objects.filter(is_cancelled=False).aggregate(total=Count("pk"))
+    totals = Rehearsal.objects.aggregate(
+        total=Count("pk", filter=Q(status=Rehearsal.Status.ACTIVE)),
+        cancelled=Count("pk", filter=Q(status=Rehearsal.Status.CANCELLED)),
+        completed=Count("pk", filter=Q(status=Rehearsal.Status.COMPLETED)),
+    )
     return render(request, "rehearsals/statistics.html", {"statistics": stats, "totals": totals})

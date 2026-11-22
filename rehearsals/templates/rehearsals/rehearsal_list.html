@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Репетиции - Сервис репетиций{% endblock %}
+{% block title %}Репетиции - {{ service_name }}{% endblock %}
 
 {% block content %}
 <h1>Репетиции</h1>
@@ -21,6 +21,12 @@
     <label class="col-md">Сортировка <select name="sort" class="form-select">
         {% for value, label in sort_options %}
             <option value="{{ value }}"{% if filters.sort == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select></label>
+    <label class="col-md">Статус <select name="status" class="form-select">
+        <option value="">Все</option>
+        {% for value, label in statuses %}
+            <option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>
         {% endfor %}
     </select></label>
     <div class="col-12">

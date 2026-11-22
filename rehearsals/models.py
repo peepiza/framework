@@ -17,8 +17,29 @@ class Band(models.Model):
         return self.name
 
 
+class RehearsalQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(status=self.model.Status.ACTIVE)
+
+    def cancelled(self):
+        return self.filter(status=self.model.Status.CANCELLED)
+
+    def completed(self):
+        return self.filter(status=self.model.Status.COMPLETED)
+
+    def for_date(self, selected_date):
+        return self.filter(rehearsal_date=selected_date)
+
+
 class Rehearsal(models.Model):
     """Репетиция группы в помещении на выбранную дату."""
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Активна"
+        CANCELLED = "cancelled", "Отменена"
+        COMPLETED = "completed", "Завершена"
+
+    objects = RehearsalQuerySet.as_manager()
 
     band = models.ForeignKey(
         Band,
@@ -34,7 +55,9 @@ class Rehearsal(models.Model):
     )
     rehearsal_date = models.DateField("Дата репетиции")
     start_time = models.TimeField("Время начала")
-    is_cancelled = models.BooleanField("Репетиция отменена", default=False)
+    status = models.CharField(
+        "Статус", max_length=10, choices=Status.choices, default=Status.ACTIVE,
+    )
 
     class Meta:
         ordering = ("-rehearsal_date", "pk")
@@ -45,5 +68,5 @@ class Rehearsal(models.Model):
         return f"{self.band} — {self.room}, {self.rehearsal_date}"
 
     def cancel(self) -> None:
-        self.is_cancelled = True
-        self.save(update_fields=["is_cancelled"])
+        self.status = self.Status.CANCELLED
+        self.save(update_fields=["status"])

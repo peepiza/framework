@@ -26,9 +26,7 @@ def available_rooms(request):
         except ValueError:
             error = "Введите корректную дату."
         else:
-            occupied = Rehearsal.objects.filter(
-                rehearsal_date=booking_date, is_cancelled=False,
-            ).values("room_id")
+            occupied = Rehearsal.objects.active().for_date(booking_date).values("room_id")
             room_list = Room.objects.exclude(pk__in=occupied)
     return render(request, "rooms/available.html", {
         "rooms": room_list, "booking_date": raw_date, "date_error": error,
@@ -37,4 +35,9 @@ def available_rooms(request):
 
 def room_detail(request, room_id):
     room = get_object_or_404(Room, pk=room_id)
+    return render(request, "rooms/room_detail.html", {"room": room})
+
+
+def room_by_slug(request, slug):
+    room = get_object_or_404(Room, slug=slug)
     return render(request, "rooms/room_detail.html", {"room": room})
