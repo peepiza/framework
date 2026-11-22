@@ -11,6 +11,27 @@
 * **pytest** — автоматизированное тестирование.
 * **flake8** — проверка качества и стиля кода (PEP 8).
 
+## Локальный запуск Django
+
+Установите зависимости командой `python -m pip install -r requirements.txt`.
+Для первого запуска скопируйте `.env.example` в `.env` и заполните
+`DJANGO_SECRET_KEY` новым локальным ключом. Сгенерировать ключ можно командой
+`python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'`.
+Сохраните значение в одинарных кавычках. Django получает ключ из окружения,
+поэтому перед командами `manage.py` загрузите переменную в текущую оболочку:
+
+```sh
+set -a
+. ./.env
+set +a
+python manage.py runserver
+```
+
+Для новой локальной базы Django выполните `python manage.py migrate`.
+Для страниц помещений и репетиций нужна локальная копия
+`data/rehearsal_planner.sqlite` с данными ПР7. Восстановите её из резервной
+копии. Обе базы SQLite и файл `.env` хранятся локально.
+
 ## Возможности проекта
 
 ### Веб-интерфейс (ПР5)
