@@ -12,6 +12,7 @@ class Room(models.Model):
     capacity = models.PositiveIntegerField("Вместимость")
     address = models.TextField("Адрес", blank=True, null=True)
 
+    image = models.ImageField("Фотография", upload_to="rooms/", blank=True)
     slug = models.SlugField("Слаг", max_length=120, unique=True, editable=False)
     is_large = models.GeneratedField(
         verbose_name="Помещение на 50 человек и больше",

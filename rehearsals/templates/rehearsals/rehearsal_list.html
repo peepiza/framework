@@ -3,37 +3,20 @@
 
 {% block content %}
 <h1>Репетиции</h1>
+{% if perms.rehearsals.add_rehearsal %}
+    <a class="btn btn-primary mb-3" href="{% url 'rehearsals:rehearsal_create' %}">Добавить репетицию</a>
+{% endif %}
 <form method="get" class="row g-2">
-    <label class="col-md">Дата <input type="date" name="date" value="{{ filters.date }}" class="form-control"></label>
-    <label class="col-md">Помещение <select name="room" class="form-select">
-        <option value="">Все</option>
-        {% for room in rooms %}
-            <option value="{{ room.pk }}"{% if filters.room == room.pk|stringformat:"s" %} selected{% endif %}>{{ room.name }}</option>
-        {% endfor %}
-    </select></label>
-    <label class="col-md">Группа <select name="band" class="form-select">
-        <option value="">Все</option>
-        {% for band in bands %}
-            <option value="{{ band.pk }}"{% if filters.band == band.pk|stringformat:"s" %} selected{% endif %}>{{ band.name }}</option>
-        {% endfor %}
-    </select></label>
-    <label class="col-md">Поиск <input name="q" value="{{ filters.q }}" class="form-control"></label>
-    <label class="col-md">Сортировка <select name="sort" class="form-select">
-        {% for value, label in sort_options %}
-            <option value="{{ value }}"{% if filters.sort == value %} selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-    </select></label>
-    <label class="col-md">Статус <select name="status" class="form-select">
-        <option value="">Все</option>
-        {% for value, label in statuses %}
-            <option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-    </select></label>
+    {% for field in filter_form %}
+        <div class="col-md">
+            {{ field.label_tag }} {{ field }}
+            {% for error in field.errors %}<p class="text-danger">{{ error }}</p>{% endfor %}
+        </div>
+    {% endfor %}
     <div class="col-12">
         <button class="btn btn-primary">Применить</button>
         <a class="btn btn-outline-secondary" href="{% url 'rehearsals:rehearsals' %}">Сбросить</a>
     </div>
-    {% for error in filter_errors %}<p class="text-danger">{{ error }}</p>{% endfor %}
 </form>
 <ul class="list-group mt-3">
     {% for r in rehearsals %}

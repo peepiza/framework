@@ -167,3 +167,93 @@ class AdminAndStatusTests(TestCase):
         self.assertContains(response, "Зал")
         response = self.client.get("/rehearsals/statistics/")
         self.assertEqual(response.context["totals"]["completed"], 1)
+
+
+class RehearsalFormsTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from django.contrib.auth import get_user_model
+
+        cls.operator = get_user_model().objects.create_user(
+            "operator", is_staff=True, is_superuser=True,
+        )
+        cls.room = Room.objects.create(name="Зал", capacity=30)
+        cls.other_room = Room.objects.create(name="Студия", capacity=20)
+        cls.band = Band.objects.create(name="Группа", genre="Джаз", members_count=5)
+        cls.other_band = Band.objects.create(name="Трио", genre="Фолк", members_count=3)
+
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        self.client.force_login(self.operator)
+        self.selected_date = timezone.localdate() + timedelta(days=1)
+        self.payload = {
+            "room": self.room.pk, "band": self.band.pk,
+            "rehearsal_date": self.selected_date.isoformat(), "start_time": "19:00",
+        }
+
+    def test_create_edit_cancel_and_reuse_room(self):
+        self.assertContains(self.client.get("/rehearsals/new/"), "Новая репетиция")
+        response = self.client.post("/rehearsals/new/", self.payload)
+        current = Rehearsal.objects.get()
+        url = f"/rehearsals/{current.pk}/"
+        self.assertRedirects(response, url)
+        self.assertContains(self.client.get(url + "edit/"), "19:00:00")
+        self.assertRedirects(
+            self.client.post(url + "edit/", {**self.payload, "start_time": "20:00"}), url,
+        )
+        self.assertEqual(Rehearsal.objects.count(), 1)
+        current.refresh_from_db()
+        self.assertEqual(current.start_time, time(20))
+        self.assertEqual(self.client.get(url + "cancel/").status_code, 405)
+        self.assertEqual(self.client.get("/rehearsals/999/edit/").status_code, 404)
+        self.assertRedirects(self.client.post(url + "cancel/"), url)
+        current.refresh_from_db()
+        self.assertEqual(current.status, Rehearsal.Status.CANCELLED)
+        self.assertEqual(self.client.post("/rehearsals/new/", self.payload).status_code, 302)
+        self.assertEqual(Rehearsal.objects.count(), 2)
+
+    def test_validation_rejects_past_dates_capacity_and_conflicts(self):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        url = "/rehearsals/new/"
+        past = timezone.localdate() - timedelta(days=1)
+        response = self.client.post(url, {**self.payload, "rehearsal_date": past.isoformat()})
+        self.assertContains(response, "Дата репетиции не может быть в прошлом")
+        small = Room.objects.create(name="Кабинет", capacity=1)
+        response = self.client.post(url, {**self.payload, "room": small.pk})
+        self.assertContains(response, "недостаточно мест")
+        self.assertFalse(Rehearsal.objects.exists())
+
+        self.client.post(url, self.payload)
+        for change in ({"band": self.other_band.pk}, {"room": self.other_room.pk}):
+            response = self.client.post(url, {**self.payload, **change})
+            self.assertContains(response, "уже заняты")
+        self.assertEqual(Rehearsal.objects.count(), 1)
+        self.client.post(url, {**self.payload, "room": self.other_room.pk, "band": self.other_band.pk})
+        other = Rehearsal.objects.get(band=self.other_band)
+        response = self.client.post(f"/rehearsals/{other.pk}/edit/", self.payload)
+        self.assertContains(response, "уже заняты")
+        other.refresh_from_db()
+        self.assertEqual(other.room, self.other_room)
+
+    def test_permission_and_csrf_protection(self):
+        from django.test import Client
+
+        anonymous = Client()
+        self.assertEqual(anonymous.get("/rehearsals/new/").status_code, 403)
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.operator)
+        self.assertEqual(client.post("/rehearsals/new/", self.payload).status_code, 403)
+        self.assertFalse(Rehearsal.objects.exists())
+        client.get("/rehearsals/new/")
+        self.assertEqual(
+            client.post("/rehearsals/new/", {
+                **self.payload, "csrfmiddlewaretoken": client.cookies["csrftoken"].value,
+            }).status_code,
+            302,
+        )
+        rehearsal = Rehearsal.objects.get()
+        self.assertEqual(client.post(f"/rehearsals/{rehearsal.pk}/cancel/").status_code, 403)

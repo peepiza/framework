@@ -16,6 +16,17 @@
             </p>
         </div>
     </div>
+    {% if perms.rehearsals.change_rehearsal %}
+        <div class="d-flex gap-2 mt-3">
+            <a class="btn btn-primary" href="{% url 'rehearsals:rehearsal_edit' rehearsal.pk %}">Редактировать</a>
+            {% if rehearsal.status == "active" %}
+                <form method="post" action="{% url 'rehearsals:rehearsal_cancel' rehearsal.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-outline-danger">Отменить репетицию</button>
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
 {% else %}
     <div class="alert alert-danger mt-3">
         <h2>Репетиция не найдена</h2>

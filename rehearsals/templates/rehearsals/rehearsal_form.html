@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{% if rehearsal %}Редактирование репетиции{% else %}Новая репетиция{% endif %}{% endblock %}
+{% block content %}
+<h1>{% if rehearsal %}Редактирование репетиции{% else %}Новая репетиция{% endif %}</h1>
+<form method="post" class="mt-3">
+    {% csrf_token %}
+    {% include "includes/form_fields.html" %}
+    <button class="btn btn-primary">Сохранить</button>
+    <a class="btn btn-outline-secondary" href="{% url 'rehearsals:rehearsals' %}">К списку</a>
+</form>
+{% endblock %}

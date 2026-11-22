@@ -1,9 +1,12 @@
 from datetime import date
 
+from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods
 
 from rehearsals.models import Rehearsal
+from .forms import RoomImageForm
 from .models import Room
 
 
@@ -41,3 +44,18 @@ def room_detail(request, room_id):
 def room_by_slug(request, slug):
     room = get_object_or_404(Room, slug=slug)
     return render(request, "rooms/room_detail.html", {"room": room})
+
+
+@permission_required("rooms.change_room", raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def room_image(request, room_id):
+    room = get_object_or_404(Room, pk=room_id)
+    if request.method == "POST":
+        form = RoomImageForm(request.POST, request.FILES, instance=room)
+        if form.is_valid():
+            room = form.save(commit=False)
+            room.save(update_fields=["image"])
+            return redirect(room)
+    else:
+        form = RoomImageForm(instance=room)
+    return render(request, "rooms/room_image_form.html", {"form": form, "room": room})
