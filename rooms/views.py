@@ -1,58 +1,40 @@
-import sqlite3
-from django.shortcuts import render
+from datetime import date
 
-DB_PATH = "data/rehearsal_planner.sqlite"
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, render
+
+from rehearsals.models import Rehearsal
+from .models import Room
+
 
 def rooms(request):
-    """Список помещений из базы данных."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row # Чтобы в шаблоне работало room.name
-    rooms_data = conn.execute("SELECT id, name, capacity, address FROM rooms ORDER BY name").fetchall()
-    conn.close()
-    
-    return render(request, "rooms/room_list.html", {"rooms": rooms_data})
+    query = request.GET.get("q", "").strip()
+    room_list = Room.objects.all()
+    if query:
+        room_list = room_list.filter(Q(name__icontains=query) | Q(address__icontains=query))
+    return render(request, "rooms/room_list.html", {"rooms": room_list, "query": query})
 
 
 def available_rooms(request):
-    """Поиск свободных помещений на выбранную дату."""
-    booking_date = request.GET.get("date")
-    rooms_data = []
-    
-    if booking_date:
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        # Параметризованный запрос (безопасный)
-        query = """
-            SELECT id, name, capacity FROM rooms 
-            WHERE id NOT IN (
-                SELECT room_id FROM rehearsals 
-                WHERE rehearsal_date = ? AND is_cancelled = 0
-            )
-        """
-        rooms_data = conn.execute(query, [booking_date]).fetchall()
-        conn.close()
-        
+    raw_date = request.GET.get("date", "")
+    booking_date = None
+    error = ""
+    room_list = Room.objects.none()
+    if raw_date:
+        try:
+            booking_date = date.fromisoformat(raw_date)
+        except ValueError:
+            error = "Введите корректную дату."
+        else:
+            occupied = Rehearsal.objects.filter(
+                rehearsal_date=booking_date, is_cancelled=False,
+            ).values("room_id")
+            room_list = Room.objects.exclude(pk__in=occupied)
     return render(request, "rooms/available.html", {
-        "rooms": rooms_data, 
-        "booking_date": booking_date
+        "rooms": room_list, "booking_date": raw_date, "date_error": error,
     })
 
 
-# --- ДОБАВЛЯЕМ ЭТУ ФУНКЦИЮ ---
-def room_detail(request, room_id: int):
-    """Детальная страница помещения из базы данных."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    query = "SELECT id, name, capacity, address FROM rooms WHERE id = ?"
-    
-    # Параметризованный запрос
-    room = conn.execute(query, [room_id]).fetchone()
-    conn.close()
-    
-    context = {"room": room}
-    return render(
-        request, 
-        "rooms/room_detail.html", 
-        context, 
-        status=404 if room is None else 200
-    )
+def room_detail(request, room_id):
+    room = get_object_or_404(Room, pk=room_id)
+    return render(request, "rooms/room_detail.html", {"room": room})
